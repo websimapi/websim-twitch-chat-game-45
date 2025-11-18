@@ -1,0 +1,63 @@
+import { loadSettings } from '../game-settings.js';
+import * as DOM from './dom-elements.js';
+import { showGame } from '../ui-manager.js';
+import { regenerateMapFeature } from '../game/world-generator.js';
+import { getSettingsHTML } from './world-settings/html.js';
+import { initAdminManager } from './world-settings/admin-manager.js';
+import { initDeleteWorld } from './world-settings/delete-world.js';
+import { initRenameWorld } from './world-settings/rename-world.js';
+import { initSettingsUpdater } from './world-settings/settings-updater.js';
+
+export function showWorldSettings(channel, worldName) {
+    const settings = loadSettings(channel, worldName);
+
+    DOM.worldSettingsContainer.classList.remove('hidden');
+    DOM.worldSettingsContainer.innerHTML = getSettingsHTML(worldName, settings);
+
+    const worldNameInputEl = document.getElementById('world-name-input');
+    const playBtn = document.getElementById('play-btn');
+
+    // --- Module Initializations ---
+    const renameManager = initRenameWorld(channel, worldName, worldNameInputEl);
+    const adminManager = initAdminManager(channel, worldName);
+    initSettingsUpdater(channel, worldName, settings);
+    initDeleteWorld(channel, renameManager.getCurrentWorldName);
+
+    // --- Remaining Logic ---
+
+    async function updateStorageInfo() {
+        const storageInfoEl = document.getElementById('storage-info');
+        if (navigator.storage && navigator.storage.estimate) {
+            const estimate = await navigator.storage.estimate();
+            const usage = (estimate.usage / 1024 / 1024).toFixed(2);
+            const quota = (estimate.quota / 1024 / 1024).toFixed(2);
+            storageInfoEl.innerHTML = `
+                <p style="margin: 0; font-size: 14px;">
+                    Using <strong>IndexedDB</strong>: ${usage} MB / ${quota} MB
+                </p>`;
+        } else {
+            storageInfoEl.textContent = 'Storage estimation is not available in this browser.';
+        }
+    }
+    updateStorageInfo();
+
+    document.getElementById('regenerate-trees-btn').addEventListener('click', () => {
+        if (confirm(`Are you sure you want to regenerate all trees for "${renameManager.getCurrentWorldName()}"?\n\nThis will remove all existing trees and spawn new ones. This action cannot be undone.`)) {
+            regenerateMapFeature(channel, renameManager.getCurrentWorldName(), 'trees');
+        }
+    });
+
+    document.getElementById('regenerate-flowers-btn').addEventListener('click', () => {
+        if (confirm(`Are you sure you want to regenerate all flowers for "${renameManager.getCurrentWorldName()}"?\n\nThis will remove all existing flower patches and spawn new ones. This action cannot be undone.`)) {
+            regenerateMapFeature(channel, renameManager.getCurrentWorldName(), 'flowers');
+        }
+    });
+
+    playBtn.addEventListener('click', async () => {
+        await renameManager.handleRename(); // Save name change on play, if any
+        const currentWorldName = renameManager.getCurrentWorldName();
+        const hosts = adminManager.getHosts();
+        const currentSettings = loadSettings(channel, currentWorldName);
+        showGame(channel, currentWorldName, hosts, currentSettings);
+    });
+}
