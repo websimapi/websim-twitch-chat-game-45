@@ -283,9 +283,9 @@ function renderHitboxes(ctx, players, map, camera, settings) {
 
             const trunk = getTreeTrunkHitbox(i, j);
             
-            // Physics uses rects for trees. Draw as rect for accuracy.
             ctx.beginPath();
-            ctx.rect(trunk.x * tileSize, trunk.y * tileSize, trunk.width * tileSize, trunk.height * tileSize);
+            // Draw circle in flat coordinates; transform handles the view projection
+            ctx.arc(trunk.x * tileSize, trunk.y * tileSize, trunk.radius * tileSize, 0, Math.PI * 2);
             ctx.stroke();
         }
     }

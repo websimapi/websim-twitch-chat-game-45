@@ -6,7 +6,7 @@ import { beginHarvestingBushes, beginHarvestingLogs, beginHarvestingFlowers, fin
 import { updateFollow } from './following.js';
 import { TILE_TYPE } from '../map-tile-types.js';
 import { findPath } from '../pathfinding.js';
-import { getPlayerHitbox, getTreeTrunkHitbox, checkCircleRectCollision } from '../game/physics.js';
+import { getPlayerHitbox, getTreeTrunkHitbox, checkCircleCollision } from '../game/physics.js';
 
 function treeHasBeenChopped(player, gameMap, allPlayers) {
     console.log(`[${player.username}] Joined in chopping a tree that was just cut. Proceeding to gather.`);
@@ -82,16 +82,14 @@ export function updateAction(player, deltaTime, gameMap, allPlayers, game) {
             
             // Inflate the tree's hitbox slightly for interaction check.
             // This ensures that when collision stops the player, they are inside this interaction box.
-            // Increased padding to robustly detect collision as interaction
             const interactionPadding = 0.25; 
             const interactionHitbox = {
-                x: treeTrunkHitbox.x - interactionPadding,
-                y: treeTrunkHitbox.y - interactionPadding,
-                width: treeTrunkHitbox.width + interactionPadding * 2,
-                height: treeTrunkHitbox.height + interactionPadding * 2
+                x: treeTrunkHitbox.x,
+                y: treeTrunkHitbox.y,
+                radius: treeTrunkHitbox.radius + interactionPadding
             };
 
-            const isTouching = checkCircleRectCollision(playerHitbox, interactionHitbox);
+            const isTouching = checkCircleCollision(playerHitbox, interactionHitbox);
 
             if (isTouching) {
                 beginChopping(player, gameMap, game);

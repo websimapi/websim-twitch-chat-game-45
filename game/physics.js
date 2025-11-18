@@ -5,11 +5,6 @@ import { TILE_TYPE } from '../map-tile-types.js';
 // Player hitbox: A circle.
 const PLAYER_HITBOX_RADIUS = 1 / 2.5; // ~0.4 tile units, from player-renderer.js
 
-// Tree trunk hitbox: As specified, bottom 50% height, centered 25% width.
-const TREE_TRUNK_HITBOX_WIDTH = 0.25;
-const TREE_TRUNK_HITBOX_HEIGHT = 0.5;
-const TREE_TRUNK_OFFSET_X = (1 - TREE_TRUNK_HITBOX_WIDTH) / 2; // ~0.375
-
 export function getPlayerHitbox(player) {
     return {
         // circle
@@ -21,10 +16,9 @@ export function getPlayerHitbox(player) {
 
 export function getTreeTrunkHitbox(tileX, tileY) {
     return {
-        x: tileX + TREE_TRUNK_OFFSET_X,
-        y: tileY + (1 - TREE_TRUNK_HITBOX_HEIGHT), // Bottom half of the tile
-        width: TREE_TRUNK_HITBOX_WIDTH,
-        height: TREE_TRUNK_HITBOX_HEIGHT
+        x: tileX + 0.5,
+        y: tileY + 0.75, // Centered horizontally, near bottom vertically
+        radius: 0.2
     };
 }
 
@@ -44,6 +38,14 @@ function checkAABBCollision(rect1, rect2) {
         rect1.y < rect2.y + rect2.height &&
         rect1.y + rect1.height > rect2.y
     );
+}
+
+export function checkCircleCollision(c1, c2) {
+    const dx = c1.x - c2.x;
+    const dy = c1.y - c2.y;
+    const distSq = dx * dx + dy * dy;
+    const radii = c1.radius + c2.radius;
+    return distSq < radii * radii;
 }
 
 export function checkCircleRectCollision(circle, rect) {
@@ -106,11 +108,13 @@ export function checkWorldCollision(hitbox, gameMap) {
             if (gameMap.grid[j][i] === TILE_TYPE.TREE) {
                 const treeHitbox = getTreeTrunkHitbox(i, j);
                 if (isCircle) {
-                    if (checkCircleRectCollision(hitbox, treeHitbox)) {
+                    if (checkCircleCollision(hitbox, treeHitbox)) {
                         return true;
                     }
                 } else {
-                    if (checkAABBCollision(hitbox, treeHitbox)) {
+                    // Rect hitbox vs Circle tree
+                    // checkCircleRectCollision expects (circle, rect)
+                    if (checkCircleRectCollision(treeHitbox, hitbox)) {
                         return true; // Collision detected
                     }
                 }
