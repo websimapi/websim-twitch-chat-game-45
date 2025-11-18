@@ -17,7 +17,7 @@ export function getPlayerHitbox(player) {
 export function getTreeTrunkHitbox(tileX, tileY) {
     return {
         x: tileX + 0.5,
-        y: tileY + 0.75, // Centered horizontally, near bottom vertically
+        y: tileY + 0.5, // Centered within the tile for accurate isometric alignment
         radius: 0.2
     };
 }
